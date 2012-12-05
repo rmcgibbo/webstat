@@ -38,5 +38,7 @@ This is fine because the browser is never updating the db, so theads aren't an i
 via the server side timer that polls the daemons. All the other async calls from the browsers are read-only.
 10. Hosting will be annoying. The options are
     - Use one of our workstations. Will need to setup a reverse proxy or something so that it can serve on port 80
-    - Deploy on Heroku free tier? http://log.liminastudio.com/programming/how-i-got-a-tornado-app-running-on-heroku-in-10-seconds
+    - Amazon EC2 or something in the "cloud". The problem here is that to access the daemons, we're going to need to be inside
+the stanford firewall (at least for certainty). I think amazon has a VPN thing (http://aws.amazon.com/vpc/faqs/), but this
+is probably complicated and not free.
 11. Auth? 
