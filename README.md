@@ -36,3 +36,7 @@ Django would be nice, but is not a good fit for the async aspect. Websockets are
 9. The server database will be handled [sqlalchemy](http://www.sqlalchemy.org/) backed by sqlite3.
 This is fine because the browser is never updating the db, so theads aren't an issue. The db is only updated
 via the server side timer that polls the daemons. All the other async calls from the browsers are read-only.
+10. Hosting will be annoying. The options are
+    - Use one of our workstations. Will need to setup a reverse proxy or something so that it can serve on port 80
+    - Deploy on Heroku free tier? http://log.liminastudio.com/programming/how-i-got-a-tornado-app-running-on-heroku-in-10-seconds
+11. Auth? 
