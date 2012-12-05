@@ -1,4 +1,4 @@
-# qstat
+# webstat
 *web monitoring for distributed set of PBS queues*
 
 ### concept
