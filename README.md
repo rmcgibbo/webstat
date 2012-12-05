@@ -7,7 +7,7 @@ Simple web page aranged as a rectangular grid. Each row represents a cluster/PBS
 a few pie and line charts showing the current usage of the cluster. The graphs might be a pie chart of the current
 usage of the queue by user / group, a line-chart of the past history of usage by user, etc.
 
-http://awwapp.com/s/b0/ea/be.png
+![Sketch](http://awwapp.com/s/b0/ea/be.png)
 
 ### architecture
 0. Three moving parts. Two connection protocols
