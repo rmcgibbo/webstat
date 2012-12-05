@@ -30,7 +30,7 @@ will be running on the clusters in a daemon mode, responding with this JSON on a
 after polling the daemons to the browsers over websocket. Browser will display data to user with an external javascript
 plotting package, like google charts https://google-developers.appspot.com/chart/interactive/docs/quick_start.
 This looks pretty easy.
-7. The server will running [Tornado](http://www.tornadoweb.org/), written in python. http://blog.kagesenshi.org/2011/10/simple-websocket-push-server-using.html
+7. The server will be running [Tornado](http://www.tornadoweb.org/), written in python. http://blog.kagesenshi.org/2011/10/simple-websocket-push-server-using.html
 Django would be nice, but is not a good fit for the async aspect. Websockets are not a good fit for django.
 8. The server does not need to do much -- just aggregate data from the daemons and then send it to the browsers on request.
 9. The server database will be handled [sqlalchemy](http://www.sqlalchemy.org/) backed by sqlite3.
