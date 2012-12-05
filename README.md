@@ -28,7 +28,7 @@ show the user that "monitoring is down, check the daemon status" or whatever.
 5. All of the display logic will be in the browser.
 6.  Server will continuously send the most recent data to the client, pulled from its sqlite database. It will
 send only when it gets new data (or when a new browser connects). Browser will display data to user with an external javascript
-plotting package, like googe charts https://google-developers.appspot.com/chart/interactive/docs/quick_start.
+plotting package, like google charts https://google-developers.appspot.com/chart/interactive/docs/quick_start.
 This looks pretty easy.
 7. Connection between the browser and the server will be via websocket
 8. What technology should run the server? Perhaps tornado, as it looks like it runs easily with websockets. http://blog.kagesenshi.org/2011/10/simple-websocket-push-server-using.html
