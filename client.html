@@ -4,7 +4,7 @@
 <script type="text/javascript">
 $(document).ready(function () {
     console.log("Starting the function");
-    var ws = new WebSocket("ws://localhost:8888/socket");
+    var ws = new WebSocket("ws://vspm42-ubuntu.stanford.edu:/socket");
     console.log("Socket opened");
     ws.onmessage = function(event) {
        console.log("Received data on the socket!");
