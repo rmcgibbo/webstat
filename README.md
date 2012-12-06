@@ -37,7 +37,7 @@ Django would be nice, but is not a good fit for the async aspect. Websockets are
 This is fine because the browser is never updating the db, so theads aren't an issue. The db is only updated
 via the server side timer that polls the daemons. All the other async calls from the browsers are read-only.
 10. Hosting will be annoying. The options are
-    - Use one of our workstations. Will need to setup a reverse proxy or something so that it can serve on port 80
+    - Use one of our workstations, running behind HAProxy.
     - Amazon EC2 or something in the "cloud". The problem here is that to access the daemons, we're going to need to be inside
 the stanford firewall (at least for certainty). I think amazon has a VPN thing (http://aws.amazon.com/vpc/faqs/), but this
 is probably complicated and not free.
