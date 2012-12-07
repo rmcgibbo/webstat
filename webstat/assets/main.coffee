@@ -25,8 +25,7 @@ window.main = () ->
             title: "Procs By User: #{payload.cluster}"
 
         chart = new google.visualization.PieChart($('#chart_div')[0])
-        chart.draw(data, options)
-        
+        chart.draw(data, options)        
         console.log('updated!')
     
     # start up the websocket

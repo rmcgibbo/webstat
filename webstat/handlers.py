@@ -26,6 +26,7 @@ for d in GLOBALS['daemons']:
     d['socket'] = socket
 
 
+
 class MainHandler(RequestHandler):
     def get(self):
         self.render('client.html')
@@ -62,7 +63,6 @@ def poll_daemons():
         cluster, _ = get_or_create(db, Cluster, name=daemon['host'])
         add_jobs_from_dict(db, report['jobs'], snapshot, cluster)
         add_nodes_from_dict(db, report['nodes'], snapshot, cluster)
-    print 'done'
     db.commit()
 
 all = object() # sentinel
@@ -72,7 +72,6 @@ def push_data(socket=all):
     message = json.dumps({'name': 'procs_by_user',
                           'contents': {'cluster': cluster.name,
                                     'data': procs_by_user}})
-
     if socket == all:
         for socket in GLOBALS['sockets']:
             socket.write_message(message)
