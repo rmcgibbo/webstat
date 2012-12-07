@@ -1,9 +1,9 @@
 #!/usr/env python
 
-import os,sys,socket
+import os, sys, socket
 import json
 import zmq
-from pprint import pprint, saferepr
+from daemonize import Daemonize
 
 # This is meant to be a standalone script.
 
@@ -221,8 +221,9 @@ def main():
 
 
 if __name__ == "__main__":
-    print sys.argv
     if len(sys.argv) > 1 and sys.argv[1] == 'shell':
         print report()
     else:
-        main()
+        daemon = Daemonize(app='cluster_daemon', pid = "/tmp/cluster_daemon.pid", action=main)
+        print 'Daemonizing' 
+        daemon.start()
