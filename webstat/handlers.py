@@ -1,4 +1,6 @@
-import zmq, json
+import json
+import zmq
+from zmq.eventloop import zmqstream
 import tornado.web
 import tornado.ioloop
 from tornado.web import RequestHandler
@@ -11,21 +13,15 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 
 
 GLOBALS = dict(
-   sockets = [],
-   daemons = [{'host': 'vsp-compute'}],
-   zmq_context = zmq.Context(),
-   zmq_auth_key = '0'
+    sockets = [],
+    daemon_hosts = ['vsp-compute'],
+    daemon_streams = [], # will get filled in
+    zmq_context = zmq.Context(),
+    zmq_auth_key = '0'
 )
 
+
 db = scoped_session(sessionmaker(bind=engine))
-
-# connect to the daemons over zmq
-for d in GLOBALS['daemons']:
-    socket = GLOBALS['zmq_context'].socket(zmq.REQ)
-    socket.connect('tcp://%s:76215' % d['host'])
-    d['socket'] = socket
-
-
 
 class MainHandler(RequestHandler):
     def get(self):
@@ -36,7 +32,7 @@ class ClientSocket(websocket.WebSocketHandler):
     def open(self):
         GLOBALS['sockets'].append(self)
         print "WebSocket opened"
-        push_data()
+        push_data_to_clients()
 
     def on_close(self):
         print "WebSocket closed"
@@ -44,29 +40,31 @@ class ClientSocket(websocket.WebSocketHandler):
 
 
 class DaemonPoller(RequestHandler):
-    @tornado.web.asynchronous
     def get(self, *args, **kwargs):
-        def poll():
-            poll_daemons()
-            push_data()
-            self.finish()
-        tornado.ioloop.IOLoop.instance().add_callback(poll)
+        poll_daemons()
 
 
 def poll_daemons():
-    print 'polling'
-    for daemon in GLOBALS['daemons']:
-        daemon['socket'].send(GLOBALS['zmq_auth_key'])
-        report = daemon['socket'].recv_json()
+    print 'polling daemons'
+    for sock in GLOBALS['daemon_streams']:
+        sock.send(GLOBALS['zmq_auth_key'])
 
+
+def recv_from_daemon(stream, messages):
+    print 'recieved data from daemon'
+    for msg in messages:
+        report = json.loads(msg)
         snapshot = Snapshot(time=datetime.datetime.now())
-        cluster, _ = get_or_create(db, Cluster, name=daemon['host'])
+        cluster, _ = get_or_create(db, Cluster, name=stream.host)
         add_jobs_from_dict(db, report['jobs'], snapshot, cluster)
         add_nodes_from_dict(db, report['nodes'], snapshot, cluster)
     db.commit()
 
+    push_data_to_clients()
+
+
 all = object() # sentinel
-def push_data(socket=all):
+def push_data_to_clients(socket=all):
     cluster = db.query(Cluster).first()
     procs_by_user = analytics.procs_by_user(db, cluster)
     message = json.dumps({'name': 'procs_by_user',
@@ -77,3 +75,13 @@ def push_data(socket=all):
             socket.write_message(message)
     else:
         socket.write_message(message)
+
+
+# connect to the daemons over zmq
+for i, host in enumerate(GLOBALS['daemon_hosts']):
+    socket = GLOBALS['zmq_context'].socket(zmq.REQ)
+    socket.connect('tcp://%s:76215' % host)
+    stream = zmqstream.ZMQStream(socket)
+    stream.on_recv_stream(recv_from_daemon)
+    stream.host = host
+    GLOBALS['daemon_streams'].append(stream)

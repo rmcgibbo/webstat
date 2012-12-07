@@ -4,6 +4,7 @@
 import os.path
 from july.web import run_server
 from july.app import JulyApplication
+from zmq.eventloop import ioloop, zmqstream
 import tornado.web
 import handlers
 import utils
@@ -35,5 +36,7 @@ application.add_handler((r'/static2/(.*).js', CoffeeHandler))
 #: from myapp.handlers import myapp
 #: application.register_app(myapp, url_prefix='/app')
 
+
 if __name__ == '__main__':
+    ioloop.install()
     run_server(application)
