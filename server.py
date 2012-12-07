@@ -7,11 +7,11 @@ from tornado.options import define, options
 from tornado import websocket
 from sqlalchemy.orm import scoped_session, sessionmaker
 from models import *
+import analytics
 import datetime
-import os
+import os, json
 import zmq
 import random
-import json
 define("port", default=9010, help="run on the given port", type=int)
 ctx = zmq.Context()
 
@@ -65,18 +65,21 @@ class DaemonPoller(tornado.web.RequestHandler):
 
 def poll_daemons():
    for daemon in daemons:
-      time = datetime.datetime.now()
       daemon['socket'].send(zmq_auth_key)
       report = daemon['socket'].recv_json()
-      
-      add_jobs_from_dict(db, report['jobs'], time, host=daemon['host'])
-      add_nodes_from_dict(db, report['nodes'], time, host=daemon['host'])
+
+      snapshot = Snapshot(time=datetime.datetime.now())
+      cluster, _ = get_or_create(db, Cluster, name=daemon['host'])      
+      add_jobs_from_dict(db, report['jobs'], snapshot, cluster)
+      add_nodes_from_dict(db, report['nodes'], snapshot, cluster)
 
    db.commit()
 
 def push():
+   cluster = db.query(Cluster).first()
+   procs_by_user = analytics.procs_by_user(db, cluster)
    for socket in GLOBALS['sockets']:
-      socket.write_message('new_data')
+      socket.write_message(json.dumps(procs_by_user))
 
 
 class Application(tornado.web.Application):
