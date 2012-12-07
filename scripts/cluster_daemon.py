@@ -221,8 +221,11 @@ def main():
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1 and sys.argv[1] == 'shell':
-        print report()
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'shell':
+            print report()
+        else:
+            main()
     else:
         daemon = Daemonize(app='cluster_daemon', pid = "/tmp/cluster_daemon.pid", action=main)
         print 'Daemonizing' 
