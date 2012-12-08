@@ -1,5 +1,10 @@
 from subprocess import Popen, PIPE
 import shlex
+from datetime import datetime
+import pytz
+
+def now():
+    return datetime.now(pytz.timezone('US/Pacific'))
 
 class NonZeroExitError(Exception):
     def __init__(self, command, returncode, output, error):

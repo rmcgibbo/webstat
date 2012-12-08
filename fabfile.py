@@ -6,7 +6,7 @@ def deploy():
 
     with cd('webstat'):
         run('git pull')
-        run('python scripts/cluster_daemon.py')
+        run('python scripts/cluster_daemon.py daemon')
 
 def coffee():
     "Compile the coffeescript to static javascript"

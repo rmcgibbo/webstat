@@ -1,40 +1,49 @@
 $ = jQuery
 window.main = () ->
-    dispatch = (event) ->
-        # dispatch a websocket event to the appropriate handler
-        msg = JSON.parse(event.data)
-
-        if msg.name == 'procs_by_user'
-            proc_by_user(msg.contents)
-        else
-            console.log('No matching handler for message.')
-            console.log(msg)
-            alert('error')
-    
-    # handle drawing a pie graph
-    proc_by_user = (payload) ->
-        # websocket handler for proc_by_user graph
+    procs_per_user = (payload) ->
+        table = new google.visualization.DataTable()
+        table.addColumn('string', 'User')
+        table.addColumn('number', 'Procs')
+        for row in payload.data
+            # payload is 'Procs', 'User', so we need to reverse it
+            table.addRow([row[1], row[0]])
         
-        # change turn the data into a 2D array
-        table = [['User', 'Procs']]
-        table.push [user, procs] for user, procs of payload.data
-        # put it into google's format
-        data = google.visualization.arrayToDataTable(table)
-
         options =
-            title: "Procs By User: #{payload.cluster}"
+            title: "Procs By User - #{payload.cluster}: #{payload.time}"
 
-        chart = new google.visualization.PieChart($('#chart_div')[0])
-        chart.draw(data, options)        
+        chart = new google.visualization.PieChart($('#chart_div1')[0])
+        chart.draw(table, options)        
         console.log('updated!')
+        
+        # register a click to redraw the chart
+        google.visualization.events.addListener chart, 'click', (event) ->
+            $.get '/procs', procs_per_user
     
-    # start up the websocket
-    console.log("Stating the socket")
-    ws = new WebSocket("ws://vspm42-ubuntu.stanford.edu:/socket")
-    ws.onmessage = dispatch
+    nodes_by_status = (payload) -> 
+        table = new google.visualization.DataTable()
+        table.addColumn('string', 'Status')
+        table.addColumn('number', 'Number')
+        for row in payload.data
+            # payload is 'Procs', 'User', so we need to reverse it
+            table.addRow([row[1], row[0]])
+        
+        options =
+            title: "Nodes - #{payload.cluster}: #{payload.time}"
+
+        chart = new google.visualization.PieChart($('#chart_div2')[0])
+        chart.draw(table, options)        
+        console.log('updated!')
+        
+        # register a click to redraw the chart
+        google.visualization.events.addListener chart, 'click', (event) ->
+            $.get '/nodes', nodes_by_status
+
     
-    $('a#refresh').click ->
-        $.get('/refresh')
+    $.get '/procs', procs_per_user
+    $.get '/nodes', nodes_by_status
+    
+    $('a#polldaemons').click ->
+        $.get('/polldaemons')
            
             
 

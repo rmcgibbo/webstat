@@ -1,11 +1,21 @@
+# python
+from datetime import datetime
+import time
+
+# sql
 from sqlalchemy import create_engine
 from sqlalchemy.sql.expression import ClauseElement, desc
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship, backref, scoped_session, sessionmaker
 from sqlalchemy import (Column, Integer, String, Table,
                         DateTime, Boolean, Float, ForeignKey)
-engine = create_engine('sqlite:///database.db', echo=False)
 from sqlalchemy.ext.declarative import declarative_base
+
+# this project
+import settings
+
+engine = create_engine('sqlite:///database.sqlite3', echo=False)
 Base = declarative_base()
+db = scoped_session(sessionmaker(bind=engine))
 
 association_table = Table('association', Base.metadata,
     Column('job_id', Integer, ForeignKey('jobs.id')),
@@ -13,7 +23,7 @@ association_table = Table('association', Base.metadata,
 
 __all__ = ['Job', 'Node', 'Cluster', 'Snapshot', 'Queue',
            'get_or_create', 'create_all', 'add_jobs_from_dict',
-           'add_nodes_from_dict', 'engine']
+           'add_nodes_from_dict', 'engine', 'db']
 
 class Job(Base):
     __tablename__ = 'jobs'
@@ -26,7 +36,7 @@ class Job(Base):
     status = Column(String(200), nullable=False)
     n_nodes =  Column(Integer, nullable=False)
     error = Column(String(200), nullable=True)
-    
+
     # three many-> one
     queue_id = Column(Integer, ForeignKey('queues.id'))
     queue = relationship("Queue", backref='jobs', order_by=id)
@@ -35,6 +45,12 @@ class Job(Base):
     snapshot_id = Column(Integer, ForeignKey('snapshots.id'))
     snapshot = relationship("Snapshot", backref='jobs', order_by=id)
 
+    def __repr__(self):
+        return '< Job: %s name=%s user=%s, queue=%s, snapshot=%s>' % (self.job_id,
+            self.name, self.user, self.queue.name, self.snapshot_id)
+
+    def to_dict(self):
+        raise NotImplementedError
 
 class Node(Base):
     __tablename__ = 'nodes'
@@ -46,7 +62,7 @@ class Node(Base):
     n_running = Column(Integer)
 
     # many nodes -> one job
-    jobs = relationship("Job", secondary=association_table, 
+    jobs = relationship("Job", secondary=association_table,
                         backref="nodes")
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     cluster = relationship("Cluster", backref='nodes', order_by=id)
@@ -54,7 +70,21 @@ class Node(Base):
     snapshot_id = Column(Integer, ForeignKey('snapshots.id'))
     snapshot = relationship("Snapshot", backref='nodes', order_by=id)
 
- 
+
+    def __repr__(self):
+        return '< Node:%s -- state=%s, n_procs=%s, n_running=%s, snapshot=%s >' % \
+            (self.name, self.state, self.n_procs, self.n_running,
+            self.snapshot_id)
+
+    def to_dict(self):
+        return {'cluster': self.cluster.name,
+                'load': self.load,
+                'n_procs': self.n_procs,
+                'n_running': self.n_running,
+                'name': self.name,
+                'state': self.state}
+
+
 class Queue(Base):
     __tablename__ = 'queues'
     id = Column(Integer, primary_key=True)
@@ -67,17 +97,36 @@ class Queue(Base):
     cluster_id = Column(Integer, ForeignKey('clusters.id'))
     cluster = relationship("Cluster", backref='queues', order_by=id)
 
+    def __repr__(self):
+        return '< Queue: %s >' % (self.name, )
+
 
 class Cluster(Base):
     __tablename__ = 'clusters'
     id = Column(Integer, primary_key=True)
     name = Column(String(200), nullable=False)
 
+    def __repr__(self):
+        return '< Cluster name=%s >' % (self.name,)
+
 
 class Snapshot(Base):
     __tablename__ = 'snapshots'
     id = Column(Integer, primary_key=True)
-    time = Column(DateTime())    
+    
+    # unix timestamp
+    timestamp = Column(Float)
+    
+    def __init__(self):
+        self.timestamp = time.time()
+        
+    @property
+    def time(self):
+        return datetime.fromtimestamp(self.timestamp, settings.timezone)
+        
+
+    def __repr__(self):
+        return '< Snapshot: time=%s >' % (self.time.strftime('%c'),)
 
 
 def create_all():
@@ -97,44 +146,47 @@ def get_or_create(session, model, **kwargs):
         return instance, True
 
 
-def add_jobs_from_dict(db, jobsdict, snapshot, cluster):
-    for d in jobsdict.itervalues():
+def add_jobs_from_dict(db, jobslist, snapshot, cluster):
+    for j in jobslist:
         keys = ['status', 'priority', 'processors', 'nodes',
                 'user', 'error', 'name', 'job_id', 'n_nodes']
-        sanitized = dict(((k, v) for k, v in d.iteritems() if k in keys))
+        sanitized = dict(((k, v) for k, v in j.iteritems() if k in keys))
         job = Job(**sanitized)
         job.cluster = cluster
         job.snapshot = snapshot
-        
+
          # add the queue that this job is on
-        q, _ = get_or_create(db, Queue, name=d['queue'], cluster=cluster)
-                             
+        q, _ = get_or_create(db, Queue, name=j['queue'], cluster=cluster)
+
         job.queue = q
         db.add(job)
 
 
-def add_nodes_from_dict(db, nodesdict, snapshot, cluster):
-    for d in nodesdict:
+def add_nodes_from_dict(db, nodeslist, snapshot, cluster):
+    n_nodes = db.query(Node).count()
+    for n in nodeslist:
         keys = ['name', 'state', 'load', 'n_procs', 'n_running']
-        sanitized = dict(((k, v) for k, v in d.iteritems() if k in keys))
+        sanitized = dict(((k, v) for k, v in n.iteritems() if k in keys))
         node = Node(**sanitized)
         node.cluster = cluster
         node.snapshot = snapshot
-        
+
         # connect the node to the jobs
-        for job_id in d['job_ids']:
+        for job_id in n['job_ids']:
             node.jobs.append(db.query(Job).filter_by(job_id=job_id, cluster=cluster,
                                                      snapshot=snapshot).first())
-         
+
         # register what queues this node acts on
-        for queue_name in d['queues']:
+        for queue_name in n['queues']:
             q, _ = get_or_create(db, Queue, name=queue_name, cluster=cluster)
             node.queues.append(q)
-         
+
         db.add(node)
+    db.flush()
+    print 'added %s nodes' % (db.query(Node).count() - n_nodes)
 
 
-def _testbuild():    
+def _testbuild():
     import datetime
     import json
 
@@ -152,8 +204,6 @@ def _testbuild():
 
 if __name__ == '__main__':
     import analytics
-    from sqlalchemy.orm import scoped_session, sessionmaker
-    db = scoped_session(sessionmaker(bind=engine))
 
     create_all()
     #_testbuild()

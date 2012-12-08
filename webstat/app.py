@@ -8,6 +8,7 @@ from zmq.eventloop import ioloop, zmqstream
 import tornado.web
 import handlers
 import utils
+import models
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -27,9 +28,11 @@ class CoffeeHandler(tornado.web.RequestHandler):
         self.set_header("Content-Type", "text/javascript")
 
 application = JulyApplication(debug=True, **settings)
-application.add_handler(('/', handlers.MainHandler))
-application.add_handler(('/socket', handlers.ClientSocket))
-application.add_handler((r'/refresh', handlers.DaemonPoller))
+application.add_handler((r'/', handlers.MainHandler))
+#application.add_handler(('/socket', handlers.ClientSocket))
+application.add_handler((r'/procs', handlers.ProcsPerUserHandler))
+application.add_handler((r'/nodes', handlers.NodesByStatusHandler))
+application.add_handler((r'/polldaemons', handlers.DaemonPoller))
 application.add_handler((r'/static2/(.*).js', CoffeeHandler))
 
 #: register an app
@@ -39,4 +42,5 @@ application.add_handler((r'/static2/(.*).js', CoffeeHandler))
 
 if __name__ == '__main__':
     ioloop.install()
+    models.create_all()
     run_server(application)
