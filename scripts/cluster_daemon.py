@@ -5,14 +5,53 @@ import json
 import zmq
 from daemonize import Daemonize
 
-# This is meant to be a standalone script.
+
+class Job:
+    def __init__(self):
+        self.job_id = 0
+        self.name = None
+        self.user = None
+        self.processors = 0
+        self.priority = 0
+        self.queue = None
+        self.status = None
+        self.n_nodes = 1
+        self.error = None
+
+    def as_dict(self):
+        return self.__dict__
+
+
+class Node:
+    def __init__(self):
+        self.name = None
+        self.state = None
+        self.load = 0.0
+        self.n_procs = 0
+        self.n_running = 0
+        self.job_ids = []
+        self.queues = []
+
+    def as_dict(self):
+        return self.__dict__
+
 
 class Cluster:
-    #  Attributes of the cluster that we're interested in
-    jobs = {}            # All the jobs running on the cluster
-    nodes = []           # All of the nodes on the cluster
-    user_slots = {}      # Number of slots taken by user
-    groups     = {}      # Names of research groups (useful only on large clusters)
+    @property
+    def jobs(self):
+        "All the jobs running on the cluster (list of Jobs)"
+        return self._jobs
+
+    @property
+    def nodes(self):
+        "All of the nodes on the cluster (list of Nodes)"
+        return self._nodes
+
+    @property
+    def groups(self):
+        "User -> group mapping (dict)"
+        return self._groups
+
 
     def __init__(self):
         # Names of commands sent to the queueing system
@@ -22,20 +61,30 @@ class Cluster:
         self.diagnose_errors = 'diagnose -q'
         self.checknode_command = 'checknode '
 
+        self._jobs = []
+        self._nodes = []
+        self._groups = {}
+
         # get everything started
         self.init_jobs()        # Creates self.jobs
         self.init_nodes()       # Makes the list of nodes
-        self.init_user_slots()  # Summarizes number of slots taken by user
-        
+        self.init_groups()      # gets user -> group mapping
+
     def init_jobs(self):
         # Build a list of jobs.
+
+        # first we're going to put the jobs in a dict
+        # by job_id, to avoid redundancies, and then
+        # we'll transfer it to a list at the end
+        jobs_dict = {}
         cjob = None
+
         for line in os.popen(self.qstat_command):
             if len(line.split()) == 0:
                 continue
             elif line[:7] == "Job Id:":
                 if cjob != None:
-                    self.jobs[cjob.job_id] = cjob
+                    jobs_dict[cjob.job_id] = cjob
                 # Initialize the new class
                 cjob = Job()
                 cjob.job_id = int(line.split()[-1].split('.')[0].split('[')[0])
@@ -70,43 +119,45 @@ class Cluster:
                 else:
                     print "I don't know what to do with this:"
                     print line,
-        self.jobs[cjob.job_id] = cjob
+        jobs_dict[cjob.job_id] = cjob
 
         # run the initialization delegates
-        self._init_job_errors()
-        self._init_job_priorities()
+        self._init_job_errors(jobs_dict)
+        self._init_job_priorities(jobs_dict)
 
+        # put the jobs into a list
+        self.jobs = jobs_dict.values()
 
-    def _init_job_errors(self):
+    def _init_job_errors(self, jobs_dict):
         # errors for queued jobs that don't have priorities
         for line in os.popen(self.diagnose_errors):
             if len(line.split()) < 3:
                 continue
             try:
-                self.jobs[int(line.split()[1])].error = ' '.join(line.split()[2:])
+                jobs_dict[int(line.split()[1])].error = ' '.join(line.split()[2:])
             # Sometimes the first word is not an integer, ignore this error.
             except ValueError:
                 continue
 
-    def _init_job_priorities(self):
+    def _init_job_priorities(self, jobs_dict):
         # List of priority values for queued jobs
         for line in os.popen(self.diagnose_priorities):
             if len(line.split()) < 2:
                 continue
             try:
-                self.jobs[int(line.split()[0])].priority = int(line.split()[1])
+                jobs_dict[int(line.split()[0])].priority = int(line.split()[1])
             # Sometimes the first word is not an integer, ignore this error.
             except ValueError:
                 continue
 
-            
+
     def init_nodes(self):
         # Build a list of nodes.
         cnode = None
         for line in os.popen(self.nodes_command):
             if len(line.split()) == 0:
                 continue
-            # I recognize that the line corresponds to a node name if 
+            # I recognize that the line corresponds to a node name if
             elif len(line.split()) == 1 and line[0] != " ":
                 if cnode != None:
                     self.nodes.append(cnode)
@@ -133,100 +184,62 @@ class Cluster:
             elif line.split()[0] == "properties":
                 # The "job-exclusive" and "free" states are not informative
                 cnode.queues = line.split()[-1].split(",")
+
         self.nodes.append(cnode)
 
 
-    def init_user_slots(self):
-        # From the jobs-dictionary, figure out which users are using how many slots
-        self.user_slots = {}
+    def init_groups(self):
         self.groups = {}
-        for job_number in self.jobs:
-            job = self.jobs[job_number]
-            user = job.user
+        for job in self.jobs:
             try: # Sometimes the group file isn't readable
                 group = os.popen('grep %s /etc/group' % user).readlines()[0].split(':')[0]
             except:
-                group = "NoGroup"
-            np   = job.processors
-            self.groups[user] = group
-            if user not in self.user_slots:
-                self.user_slots[user] = np
-            else:
-                self.user_slots[user] += np
+                group = None
+            if job.user is not None:
+                self.groups[job.user] = group
 
 
-class Job:
-    def __init__(self):
-        self.job_id = 0
-        self.name = 'NoName'
-        self.user = 'Nobody'
-        self.processors = 0
-        self.priority = 0
-        self.queue = 'NoQueue'
-        self.status = 'NoStatus'
-        self.n_nodes = 1
-        self.error = None
-
-    def _as_json_encodable(self):
-        return self.__dict__
-    
-class Node:
-    def __init__(self):
-        self.name = 'NoName'
-        self.state = 'NoState'
-        self.load = 0.0
-        self.n_procs = 0
-        self.n_running = 0
-        self.job_ids = []
-        self.queues = []
-
-    def _as_json_encodable(self):
-        return self.__dict__
-
-
-class MyJSONEncoder(json.JSONEncoder):
-    def default(self, obj):
-        try:
-            # if the object has a json encodable representation
-            # registered, use that
-            return obj._as_json_encodable()
-        except:
-            # else just try the object
-            return obj
-
-            
-def report():
+def make_report():
     c = Cluster()
-    report = {'jobs': c.jobs, 'nodes': c.nodes,
-              'user_slots': c.user_slots,
+    report = {'jobs': [e.as_dict() for e in c.jobs],
+              'nodes': [e.as_dict() for e in c.nodes],
               'groups': c.groups}
-    return json.dumps(report, cls=MyJSONEncoder)
+    return report
+
 
 def main():
     ctx = zmq.Context()
     sock = ctx.socket(zmq.REP)
     sock.bind('tcp://*:76215')
     auth_key = None
-    
+
     while 1:
         recvd = sock.recv()
         print 'recvd', recvd
-        if auth_key is None:
-            auth_key = recvd
-        else:
-            if auth_key != recvd:
-                sock.send('')
-        print 'Send Report'
-        sock.send(report())
+        #if auth_key is None:
+        #    auth_key = recvd
+        #else:
+        #    if auth_key != recvd:
+        #        sock.send('')
+        report = make_report()
+        print 'Send Report, n_nodes=%s, n_jobs=%s' % (len(report['nodes']), len(report['jobs']))
+        sock.send_json(report)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) > 1:
-        if sys.argv[1] == 'shell':
-            print report()
-        else:
-            main()
-    else:
+    print 'Usage %s [shell, run, daemon]' % sys.argv[0]
+    if len(sys.argv) == 1:
+        sys.exit(1)
+
+    if sys.argv[1] == 'shell':
+        print 'report = make_report()'
+        report = make_report()
+        import IPython; IPython.embed()
+    elif sys.argv[1] == 'run':
+        main()
+    elif sys.argv[1] == 'daemon':
         daemon = Daemonize(app='cluster_daemon', pid = "/tmp/cluster_daemon.pid", action=main)
-        print 'Daemonizing' 
+        print 'Daemonizing'
         daemon.start()
+    else:
+        raise RuntimeError()
