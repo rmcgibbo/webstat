@@ -12,6 +12,15 @@ usage of the queue by user / group, a line-chart of the past history of usage by
 
 ![Sketch](http://awwapp.com/s/b0/ea/be.png)
 
+### tools
+- tornado webserver
+- zeromq sockets
+- sqlalchemy & sqlite3
+- memcached
+- coffeescript
+- google charts
+- bootstrap (?)
+
 ### architecture
 0. Three moving parts. Two connection protocols
     - Python daemons running on each cluster
