@@ -7,8 +7,10 @@ import settings
 client = pylibmc.Client(['127.0.0.1'], binary=True,
             behaviors={"tcp_nodelay": True, "ketama": True})
 
-__all__ = ['memcached']
+__all__ = ['memcached', 'flush_all']
 
+def flush_all():
+    client.flush_all()
 
 def memcached(f):
     # from http://www.zieglergasse.at/blog/2011/python/memcached-decorator-for-python/

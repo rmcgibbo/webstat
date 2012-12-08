@@ -9,10 +9,8 @@ from tornado import websocket
 import settings
 from models import *
 import analytics
+import memcached
 from sqlalchemy.orm import scoped_session, sessionmaker
-
-# this will get filled in with the zmq streams
-DAEMON_STREAMS = []
 
 
 class MainHandler(RequestHandler):
@@ -34,6 +32,13 @@ class NodesByStatusHandler(RequestHandler):
         nodes_by_status, time = analytics.nodes_by_status(cluster)
         self.write({'cluster': cluster.name, 'data': nodes_by_status,
                     'time': time.isoformat()})
+
+
+# ########### ########### ########### ########### ########### ###########
+#    Stuff for dealing with the interface to the cluster daemons
+# ########### ########### ########### ########### ########### ###########
+# this will get filled in with the zmq streams
+DAEMON_STREAMS = []
 
 class DaemonPoller(RequestHandler):
     def get(self, *args, **kwargs):
@@ -57,6 +62,7 @@ def recv_from_daemon(stream, messages):
         add_jobs_from_dict(db, report['jobs'], snapshot, cluster)
         add_nodes_from_dict(db, report['nodes'], snapshot, cluster)
     db.commit()
+    memcached.flush_all()
 
 
 # connect to the daemons over zmq
