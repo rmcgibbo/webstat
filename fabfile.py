@@ -11,3 +11,5 @@ def deploy():
 def coffee():
     "Compile the coffeescript to static javascript"
     local('coffee -c -o webstat/static/ webstat/assets/main.coffee')
+    local('coffee -c -o webstat/static/ webstat/assets/main2.coffee')
+
