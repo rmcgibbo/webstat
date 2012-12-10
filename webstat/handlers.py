@@ -18,7 +18,6 @@ import memcached
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-
 # class CoffeeHandler(tornado.web.RequestHandler):
 #     """Handler to compile coffeescript on the fly into JS and then serve it
 #     This is slow, but good for development.
@@ -33,9 +32,13 @@ from sqlalchemy.orm import scoped_session, sessionmaker
 #         self.finish()
 
 
-#class MainHandler(RequestHandler):
-#    def get(self):
-#        self.render('client2.html')
+class IndexHandler(RequestHandler):
+    def get(self):
+        print settings.public_path
+        path = os.path.join(settings.public_path, 'index.html')
+        with open(path) as f:
+            self.write(f.read())
+            
 
 class Clusters(RequestHandler):
     def get(self, *args, **kwargs):
@@ -43,8 +46,9 @@ class Clusters(RequestHandler):
         for cluster in db.query(Cluster).all():
             response.append({'name': cluster.name, 'id': cluster.id})
         response[0]['active'] = True
+        response.append({'name': 'certainty', 'id': 2})
         self.write({'clusters': response})
-        self.finish()
+
 
 class Procs(RequestHandler):
     def get(self, *args, **kwargs):
@@ -54,7 +58,7 @@ class Procs(RequestHandler):
         else:
             procs, time = analytics.procs_per_user(cluster)
             self.write({'procs': procs, 'time': time})
-            self.finish()
+
 
 class Nodes(RequestHandler):
     def get(self, *args, **kwargs):
@@ -64,7 +68,7 @@ class Nodes(RequestHandler):
         else:
             nodes, time = analytics.nodes_by_status(cluster)
             self.write({'nodes': nodes, 'time': time})
-            self.finish()
+
 
 class FreeNodes(RequestHandler):
     def get(self, *args, **kwargs):
@@ -74,7 +78,7 @@ class FreeNodes(RequestHandler):
         else:
             nodes = analytics.free_nodes(cluster)
             self.write({'data': nodes})
-            self.finish()
+
 
 class History(RequestHandler):
     def get(self, *args, **kwargs):
@@ -86,7 +90,7 @@ class History(RequestHandler):
                         time_delta=timedelta(hours=int(args[1])))
             table, headings = analytics.tableify(timeseries)
             self.write({'table': table, 'headings': headings})
-            self.finish()
+            #self.finish()
             
 
         

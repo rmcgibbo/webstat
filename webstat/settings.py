@@ -15,13 +15,14 @@ zeromq_port = 76215
 # This value can be HIGH, since when the webserver recieves
 # new data from the daemons, it automatically flushes the
 # memcachce
-memcache_residence_time = 5 # seconds
+memcache_residence_time = 5*60 # seconds
 
 # this is the maximum frequency (minimum period)
 # that we poll the daemons at. When clients ask
 # more frequently, we tell them no.
-daemon_poll_min_period  = 5 # seconds
+daemon_poll_min_period  = 30 # seconds
+daemon_poll_default_period_minutes = 20
 
 zmq_auth_keys = 'none'
 
-assets_path = os.path.join(ROOT, 'assets')
+public_path = os.path.join(ROOT, 'public')

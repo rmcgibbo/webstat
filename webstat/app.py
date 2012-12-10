@@ -8,28 +8,27 @@ import tornado.options
 import handlers
 import utils
 import models
+import settings
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
-settings = dict(
+config = dict(
     cookie_secret='secret',
     xsrf_cookies='secret',
-    template_path=os.path.join(ROOT, 'templates'),
-    static_path=os.path.join(ROOT, 'static'),
-    static_url_prefix='/static/',
+    debug=True,
 )
 
-handlers = [
-    #(r'/', handlers.MainHandler),
+routes = [
+    (r'/(favicon\.ico)', tornado.web.StaticFileHandler, {'path': settings.public_path}),
+    (r'/(application\.css)', tornado.web.StaticFileHandler, {'path': settings.public_path}),
+    (r'/(application\.js)', tornado.web.StaticFileHandler, {'path': settings.public_path}),
+    (r'/', handlers.IndexHandler),
     (r'/announce', handlers.AnnounceSocket),
     (r'/clusters', handlers.Clusters),
     (r'/cluster/(\d+)/procs', handlers.Procs),
     (r'/cluster/(\d+)/nodes', handlers.Nodes),
     (r'/cluster/(\d+)/history/(\d+)', handlers.History),
     (r'/cluster/(\d+)/freenodes', handlers.FreeNodes),
-    #(r'/assets/(.*).js', handlers.CoffeeHandler),
-    #(r'/client2.html', handlers.Client2Handler),
-
 ]
 
 if __name__ == '__main__':
@@ -37,6 +36,12 @@ if __name__ == '__main__':
     ioloop.install() # install zmq into the ioloop
     models.create_all()
     
-    app = tornado.web.Application(handlers, **settings)
+    app = tornado.web.Application(routes, **config)
     app.listen(8000)
+
+    # install the default daemon poller
+    tornado.ioloop.PeriodicCallback(handlers.poll_daemons,
+        settings.daemon_poll_default_period_minutes * 60.0 * 1000.0,
+        io_loop = tornado.ioloop.IOLoop.instance()).start()
+
     tornado.ioloop.IOLoop.instance().start()
