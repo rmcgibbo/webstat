@@ -2,6 +2,7 @@ import os
 import time
 import zmq
 import logging
+from datetime import timedelta
 import simplejson as json
 from zmq.eventloop import zmqstream
 import tornado.web
@@ -18,47 +19,77 @@ from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 
-class CoffeeHandler(tornado.web.RequestHandler):
-    """Handler to compile coffeescript on the fly into JS and then serve it
-    This is slow, but good for development.
+# class CoffeeHandler(tornado.web.RequestHandler):
+#     """Handler to compile coffeescript on the fly into JS and then serve it
+#     This is slow, but good for development.
 
-    With some caching it could be faster?
-    """
+#     With some caching it could be faster?
+#     """
+#     def get(self, *args, **kwargs):
+#         with open(os.path.join(settings.assets_path, args[0] + '.coffee')) as f:
+#             self.write(utils.coffeefactory(f))
+
+#         self.set_header("Content-Type", "text/javascript")
+#         self.finish()
+
+
+#class MainHandler(RequestHandler):
+#    def get(self):
+#        self.render('client2.html')
+
+class Clusters(RequestHandler):
     def get(self, *args, **kwargs):
-        with open(os.path.join(settings.assets_path, args[0] + '.coffee')) as f:
-            self.write(utils.coffeefactory(f))
-
-        self.set_header("Content-Type", "text/javascript")
+        response = []
+        for cluster in db.query(Cluster).all():
+            response.append({'name': cluster.name, 'id': cluster.id})
+        response[0]['active'] = True
+        self.write({'clusters': response})
         self.finish()
 
+class Procs(RequestHandler):
+    def get(self, *args, **kwargs):
+        cluster = db.query(Cluster).get(int(args[0]))
+        if cluster is None:
+            self.send_error(404)
+        else:
+            procs, time = analytics.procs_per_user(cluster)
+            self.write({'procs': procs, 'time': time})
+            self.finish()
 
-class MainHandler(RequestHandler):
-    def get(self):
-        self.render('client.html')
+class Nodes(RequestHandler):
+    def get(self, *args, **kwargs):
+        cluster = db.query(Cluster).get(int(args[0]))
+        if cluster is None:
+            self.send_error(404)
+        else:
+            nodes, time = analytics.nodes_by_status(cluster)
+            self.write({'nodes': nodes, 'time': time})
+            self.finish()
 
+class FreeNodes(RequestHandler):
+    def get(self, *args, **kwargs):
+        cluster = db.query(Cluster).get(int(args[0]))
+        if cluster is None:
+            self.send_error(404)
+        else:
+            nodes = analytics.free_nodes(cluster)
+            self.write({'data': nodes})
+            self.finish()
 
-class Client2Handler(RequestHandler):
-    def get(self):
-        with open('webstat/assets/client2.html') as f:
-            self.write(f.read())
+class History(RequestHandler):
+    def get(self, *args, **kwargs):
+        cluster = db.query(Cluster).get(int(args[0]))
+        if cluster is None:
+            self.send_error(404)
+        else:
+            timeseries = analytics.procs_per_user(cluster,
+                        time_delta=timedelta(hours=int(args[1])))
+            table, headings = analytics.tableify(timeseries)
+            self.write({'table': table, 'headings': headings})
+            self.finish()
+            
+
         
-
-class ProcsPerUserHandler(RequestHandler):
-    def get(self, *args, **kwargs):
-        cluster = db.query(Cluster).first()
-        procs_per_user, time = analytics.procs_per_user(cluster)
-        self.write({'cluster': cluster.name, 'data': procs_per_user,
-                    'time': time.isoformat()})
-
-
-class NodesByStatusHandler(RequestHandler):
-    def get(self, *args, **kwargs):
-        cluster = db.query(Cluster).first()
-        nodes_by_status, time = analytics.nodes_by_status(cluster)
-        self.write({'cluster': cluster.name, 'data': nodes_by_status,
-                    'time': time.isoformat()})
-
-
 class AnnounceSocket(websocket.WebSocketHandler):
     __instances__ = []
 

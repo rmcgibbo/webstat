@@ -20,12 +20,15 @@ settings = dict(
 )
 
 handlers = [
-    (r'/', handlers.MainHandler),
-    ('/announce', handlers.AnnounceSocket),
-    (r'/procs', handlers.ProcsPerUserHandler),
-    (r'/nodes', handlers.NodesByStatusHandler),
-    (r'/assets/(.*).js', handlers.CoffeeHandler),
-    (r'/client2.html', handlers.Client2Handler),
+    #(r'/', handlers.MainHandler),
+    (r'/announce', handlers.AnnounceSocket),
+    (r'/clusters', handlers.Clusters),
+    (r'/cluster/(\d+)/procs', handlers.Procs),
+    (r'/cluster/(\d+)/nodes', handlers.Nodes),
+    (r'/cluster/(\d+)/history/(\d+)', handlers.History),
+    (r'/cluster/(\d+)/freenodes', handlers.FreeNodes),
+    #(r'/assets/(.*).js', handlers.CoffeeHandler),
+    #(r'/client2.html', handlers.Client2Handler),
 
 ]
 

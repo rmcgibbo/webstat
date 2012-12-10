@@ -15,7 +15,7 @@ zeromq_port = 76215
 # This value can be HIGH, since when the webserver recieves
 # new data from the daemons, it automatically flushes the
 # memcachce
-memcache_residence_time = 60 # seconds
+memcache_residence_time = 5 # seconds
 
 # this is the maximum frequency (minimum period)
 # that we poll the daemons at. When clients ask

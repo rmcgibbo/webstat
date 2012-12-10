@@ -38,6 +38,37 @@ def recent_snapshots(model, cluster, time_delta):
     return snapshots
 
 
+
+def tableify(timeseries, missing_value=0):
+    all_entries = set([])
+
+    for entries, time  in timeseries:
+        names = [e[1] for e in entries]
+        all_entries = all_entries.union(set(names))
+    
+
+    column_names = list(all_entries)
+    index = dict((e, i) for i, e in enumerate(column_names))
+
+    table = []
+
+    for entries, time in timeseries:
+        row = [missing_value for i in range(len(column_names)+1)]
+        for value, name in entries:
+            # add one to leave space for timestamp
+            row[index[name]+1] = value
+        row[0] = time
+        table.append(row)
+    
+    headings = [{'type':'datetime', 'name':'timestamp'}]
+    for name in column_names:
+        headings.append({'type':'number', 'name':name})
+
+    return table, headings
+        
+
+
+
 @memcached
 def procs_per_user(cluster, time_delta=None):
     """Get the numer of procs in use by each user
@@ -92,7 +123,7 @@ def procs_per_user(cluster, time_delta=None):
         n_free_procs = db.query(func.sum(Node.n_procs)).filter_by(cluster=cluster,
             snapshot=snapshot, state='free').first()[0]
         p_by_user.append((n_free_procs, u'free'))
-        return p_by_user, snapshot.time
+        return p_by_user, snapshot.time.isoformat()
 
     snapshot = most_recent_snapshot(Job, cluster)
     
@@ -137,7 +168,7 @@ def nodes_by_status(cluster, time_delta=None):
     def at_snapshot(snapshot):
         r = db.query(func.count(Node.state), Node.state).group_by(Node.state).\
             filter_by(snapshot=snapshot, cluster=cluster).all()
-        return r, snapshot.time
+        return r, snapshot.time.isoformat()
     
     if time_delta is None:
         snapshot = most_recent_snapshot(Node, cluster)
@@ -147,21 +178,14 @@ def nodes_by_status(cluster, time_delta=None):
 
 
 @memcached
-def free_nodes():
-    """Nodes that are free on any cluster, currently
-
-    Returns
-    -------
-    node_dicts : list of dicts
+def free_nodes(cluster):
+    """Nodes that are free
     """
-    nodes = []
 
-    for cluster in db.query(Cluster).all():
-        snapshot = most_recent_snapshot(Node, cluster)
-        nodes.extend(db.query(Node).filter_by(state='free', snapshot=snapshot,
-            cluster=cluster).all())
-
-    return [node.to_dict() for node in nodes]
+    snapshot = most_recent_snapshot(Node, cluster)
+    nodes = db.query(Node).filter_by(state='free', snapshot=snapshot,
+            cluster=cluster).all()
+    return [n.to_dict() for n in nodes]
 
 
 if __name__ == '__main__':
