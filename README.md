@@ -1,53 +1,39 @@
-# webstat
+# [webstat](vspm42-ubuntu.stanford.edu)
 *web monitoring interface for a distributed set of PBS queues*
 
 ### concept
 
-Wouldn't it be nice to have a live-updating browser-based graphical summary of the current state of the queue and usage
-of all of our clusters? Yeah. I think so too.
-
-The web page will be aranged as a simple rectangular grid. Each row represents a cluster/PBS system. Within the rows, you have
-a few pie and line charts showing the current usage of the cluster. The graphs might be a pie chart of the current
-usage of the queue by user / group, a line-chart of the past history of usage by user, etc.
-
-![Sketch](http://awwapp.com/s/b0/ea/be.png)
-
-### tools
-- tornado webserver
-- zeromq sockets
-- sqlalchemy & sqlite3
-- memcached
-- coffeescript
-- google charts
-- bootstrap (?)
+Wouldn't it be nice to have a live-updating browser-based graphical summary of
+the current state of the queue and usage of all of our clusters?
+Yeah. I think so too.
 
 ### architecture
-0. Three moving parts. Two connection protocols
-    - Python daemons running on each cluster
-    - Tornado webserver. Polls the daemons for data and pushes a summary to the browsers.
-    - Browser javascript. Receieves push data from the server, renders it as charts
-    - Daemon-server communication is 0MQ (PyZMQ) over ssh. http://zeromq.github.com/pyzmq/ssh.html
-    - browser-server communication is websockets
-1. Lee-Ping already has a python code for calling qstat and checkjob to take a snapshot of the data usage.
-https://github.com/rmcgibbo/hpcutils/blob/master/scripts/PBSCheck.py. The script is current designed to output to the
-shell, but with a little modification it could probably output its info as JSON. This script
-will be running on the clusters in a daemon mode, responding with this JSON on a zeromq REQ/REP socket.
-2. The web server, at some time interval, will connect to all of the daemons and ask them for a report.
-4. The web server will save the data in a sqlite3 (or whatever) database.
-5. All of the display logic will be in the browser.
-6.  Server will send the most recent data to the client, pulled from its sqlite database. Server will push new data
-after polling the daemons to the browsers over websocket. Browser will display data to user with an external javascript
-plotting package, like google charts https://google-developers.appspot.com/chart/interactive/docs/quick_start.
-This looks pretty easy.
-7. The server will be running [Tornado](http://www.tornadoweb.org/), written in python. http://blog.kagesenshi.org/2011/10/simple-websocket-push-server-using.html
-Django would be nice, but is not a good fit for the async aspect. Websockets are not a good fit for django.
-8. The server does not need to do much -- just aggregate data from the daemons and then send it to the browsers on request.
-9. The server database will be handled [sqlalchemy](http://www.sqlalchemy.org/) backed by sqlite3.
-This is fine because the browser is never updating the db, so theads aren't an issue. The db is only updated
-via the server side timer that polls the daemons. All the other async calls from the browsers are read-only.
-10. Hosting will be annoying. The options are
-    - Use one of our workstations, running behind HAProxy.
-    - Amazon EC2 or something in the "cloud". The problem here is that to access the daemons, we're going to need to be inside
-the stanford firewall (at least for certainty). I think amazon has a VPN thing (http://aws.amazon.com/vpc/faqs/), but this
-is probably complicated and not free.
-11. Auth? 
+There are three components to the system: (a) browser app, (b) webserver, and
+(c) cluster daemons.
+
+The cluster daemons are the simplest. They are small daemonized python processes
+running on each cluster. Their only functionality is to query the state of the
+cluster via PBS shell commands like `qstat`, parse the output into a nice format,
+and send it to the webserver. The code is based on Lee-Ping's [PBSCheck.py](https://github.com/rmcgibbo/hpcutils/blob/master/scripts/PBSCheck.py)
+Communication is done over a zeromq REQ/REP socket. The cluster deamon is the REP (reply) end.
+
+The webserver is a python process running the [tornado](http://www.tornadoweb.org/)
+server. I chose tornado because it's fairly simple and has some support for
+websockets that are lacking from something like django. The webserver is using
+sqlite3 with sqlalchemy to hold its data and memcached
+([pylibmc](http://pypi.python.org/pypi/pylibmc)) for fun. At some periodic interval,
+the webserver requests new data from the daemons. It also allows the clients
+to trigger this refresh manually.
+
+To the client, the server simply responds to AJAX requests for data. So I'm
+not using any server-side templating. Well, it also does one other thing, which
+is manage a websocket connection with the browsers. Whenever the server receives
+new data from the daemons, it pushes out an announcement to that effect over the
+websocket to each connected client, which basically invites the clients to
+ask for the data. The server is deployed behind HAProxy on vspm42-ubuntu.
+
+The client itself is a javascript app. It's hosted, currently, in a [separate
+github repository](https://github.com/rmcgibbo/webstatclient). That code is
+written in coffeescript, uses the Spine.js framework, twitter bootsrap
+for UI components and google charts for graphing. It's the trickiest part of
+the whole operation because it requires using a new language an ecosystem.
