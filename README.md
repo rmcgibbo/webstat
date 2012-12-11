@@ -1,4 +1,4 @@
-# [webstat](vspm42-ubuntu.stanford.edu)
+# [webstat](http://vspm42-ubuntu.stanford.edu)
 *web monitoring interface for a distributed set of PBS queues*
 
 ### concept
