@@ -37,3 +37,19 @@ github repository](https://github.com/rmcgibbo/webstatclient). That code is
 written in coffeescript, uses the Spine.js framework, twitter bootsrap
 for UI components and google charts for graphing. It's the trickiest part of
 the whole operation because it requires using a new language an ecosystem.
+
+todo
+----
+- more visualizations, data
+- more clusters (certainty, biox3)
+- move some logic that's in the client into this codebase. specifically, 
+  the client is currently doing some data munging to get the data from
+  the format the sqlite3 spits out into a format that google charts likes.
+  it would be easier if this logic were on the python side (and it just emmitted
+  the data in a format that google charts likes)
+- Make the server run as a daemon and handle logging correctly. Probably using
+  [this module](http://pypi.python.org/pypi/python-daemon/)  
+- Make the whole thing installable as a python package and easy to run from
+  the command line, so that it can be deployed easily with
+  [fabric](http://docs.fabfile.org/en/1.5/).
+- put the client and server code together in a single package.

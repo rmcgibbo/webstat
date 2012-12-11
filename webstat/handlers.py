@@ -18,23 +18,10 @@ import memcached
 from sqlalchemy.sql.expression import desc
 from sqlalchemy.orm import scoped_session, sessionmaker
 
-# class CoffeeHandler(tornado.web.RequestHandler):
-#     """Handler to compile coffeescript on the fly into JS and then serve it
-#     This is slow, but good for development.
-
-#     With some caching it could be faster?
-#     """
-#     def get(self, *args, **kwargs):
-#         with open(os.path.join(settings.assets_path, args[0] + '.coffee')) as f:
-#             self.write(utils.coffeefactory(f))
-
-#         self.set_header("Content-Type", "text/javascript")
-#         self.finish()
-
 
 class IndexHandler(RequestHandler):
     def get(self):
-        print settings.public_path
+        # serve public/index.html
         path = os.path.join(settings.public_path, 'index.html')
         with open(path) as f:
             self.write(f.read())
@@ -90,11 +77,25 @@ class History(RequestHandler):
                         time_delta=timedelta(hours=int(args[1])))
             table, headings = analytics.tableify(timeseries)
             self.write({'table': table, 'headings': headings})
-            #self.finish()
             
 
-        
+
 class AnnounceSocket(websocket.WebSocketHandler):
+    """Handle the websocket connection with the browsers.
+    All of the communication over the socket is JSON.
+    
+    The websocket is used for
+    - A heartbeat, initialized by the browsers, that sends ping/pong messages.
+    - Announcing a message to every client. This is used to tell them when
+    we have new data.
+    - Receiving requests from the clients to poll the daemons for new data.
+    
+    A lot of this class -- most of the classmethods -- could be refactored
+    into a baseclass that might make our application specific logic cleaner
+    and more obvious.
+    """
+    # keep track of all instances of this class. each instance corresponds to
+    # a different browser
     __instances__ = []
 
     # this dict maps names that come in from the browser on the websocket
@@ -160,7 +161,7 @@ class AnnounceSocket(websocket.WebSocketHandler):
 # this will get filled in with the zmq streams
 DAEMON_STREAMS = []
 
-
+# this is called both by a PeriodicCallback and by the user, via the websocket.
 @utils.maxfrequency(timeout=settings.daemon_poll_min_period)
 def poll_daemons():
     """Poll the daemons over zeromq. Guard against doing this too frequently

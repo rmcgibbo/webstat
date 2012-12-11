@@ -1,3 +1,5 @@
+"""Sqlalchemy logic for querying the db and making reports for the client
+"""
 from sqlalchemy.sql.expression import desc
 from sqlalchemy import func
 from collections import defaultdict
@@ -10,7 +12,6 @@ from memcached import memcached
 
 __all__ = ['most_recent_snapshot', 'recent_snapshots', 'procs_per_user',
     'nodes_by_status', 'free_nodes']
-
 
 def most_recent_snapshot(model, cluster):
     snapshots = db.query(Snapshot).order_by(desc(Snapshot.timestamp))

@@ -67,30 +67,3 @@ def memcached(*args, **kwargs):
         # This is just returning the decorator
         timeout = kwargs.pop('timeout', settings.memcache_residence_time)
         return _memcached
-
-# 
-# def memcached_old(f):
-#     # from http://www.zieglergasse.at/blog/2011/python/memcached-decorator-for-python/
-# 
-#     @functools.wraps(f)
-#     def newfn(*args, **kwargs):
-#         # generate md5 out of args and function
-#         m = hashlib.md5()
-#         margs = [x.__repr__() for x in args]
-#         mkwargs = [x.__repr__() for x in kwargs.values()]
-#         map(m.update, margs + mkwargs)
-#         m.update(f.__name__)
-#         m.update(f.__class__.__name__)
-#         key = m.hexdigest()
-# 
-#         value = client.get(key)
-#         if value is not None:
-#             print 'Hit memcache'
-#             return value
-# 
-#         print 'Hitting DB'
-#         value = f(*args, **kwargs)
-#         client.set(key, value, settings.memcache_residence_time)
-#         return value
-# 
-#     return newfn

@@ -37,11 +37,12 @@ if __name__ == '__main__':
     models.create_all()
     
     app = tornado.web.Application(routes, **config)
+    # serve on port 8000, which is reverse proxied to port 80.
     app.listen(8000)
 
-    # install the default daemon poller
+    # install the default daemon poller to trigger periodically
     tornado.ioloop.PeriodicCallback(handlers.poll_daemons,
         settings.daemon_poll_default_period_minutes * 60.0 * 1000.0,
-        io_loop = tornado.ioloop.IOLoop.instance()).start()
+        io_loop=tornado.ioloop.IOLoop.instance()).start()
 
     tornado.ioloop.IOLoop.instance().start()

@@ -147,6 +147,8 @@ def get_or_create(session, model, **kwargs):
 
 
 def add_jobs_from_dict(db, jobslist, snapshot, cluster):
+    "add data sent by the daemons to the database"
+    
     for j in jobslist:
         keys = ['status', 'priority', 'processors', 'nodes',
                 'user', 'error', 'name', 'job_id', 'n_nodes']
@@ -163,6 +165,8 @@ def add_jobs_from_dict(db, jobslist, snapshot, cluster):
 
 
 def add_nodes_from_dict(db, nodeslist, snapshot, cluster):
+    "add data sent by the daemons to the database"
+
     n_nodes = db.query(Node).count()
     for n in nodeslist:
         keys = ['name', 'state', 'load', 'n_procs', 'n_running']
@@ -187,10 +191,11 @@ def add_nodes_from_dict(db, nodeslist, snapshot, cluster):
 
 
 def _testbuild():
+    "testing code"
     import datetime
     import json
 
-    with open('dump.json') as f:
+    with open('etc/dump.json') as f:
         report = json.load(f)
         snapshot = Snapshot(time=datetime.datetime.now())
         cluster = Cluster(name='test')
@@ -203,6 +208,7 @@ def _testbuild():
 
 
 if __name__ == '__main__':
+    "testing code"
     import analytics
 
     create_all()
