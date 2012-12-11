@@ -56,3 +56,7 @@ todo
   the command line, so that it can be deployed easily with
   [fabric](http://docs.fabfile.org/en/1.5/).
 - put the client and server code together in a single package.
+- it would be really nice to be able to see the state of the queue -- which jobs are queued,
+  what priority they have, etc. Be able to live-filter that to only show a specific username or
+  job name. Be able to get details about the job. This requires thinking a little harder
+  about the routes and the API the server is providing.
