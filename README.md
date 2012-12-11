@@ -1,6 +1,9 @@
 # [webstat](http://vspm42-ubuntu.stanford.edu)
 *web monitoring interface for a distributed set of PBS queues*
 
+![Prototype](https://raw.github.com/rmcgibbo/webstat/master/webstat.png)
+As you see, there are no free nodes because Lee-Ping is using them all.
+
 ### concept
 
 Wouldn't it be nice to have a live-updating browser-based graphical summary of
