@@ -30,10 +30,10 @@ class IndexHandler(RequestHandler):
 class Clusters(RequestHandler):
     def get(self, *args, **kwargs):
         response = []
-        for cluster in db.query(Cluster).all():
-            response.append({'name': cluster.name, 'id': cluster.id})
-        response[0]['active'] = True
-        response.append({'name': 'certainty', 'id': 2})
+        for daemon in settings.daemons:
+            response.append({'name': daemon['name'], 'id': daemon['id'], 
+                             'acive': daemon['default']})
+
         self.write({'clusters': response})
 
 
@@ -178,7 +178,7 @@ def recv_from_daemon(stream, messages):
     for msg in messages:
         report = json.loads(msg)
         snapshot = Snapshot()
-        cluster, _ = get_or_create(db, Cluster, name=stream.host)
+        cluster, _ = get_or_create(db, Cluster, name=stream.daemon['name'], id=stream.daemon['id'])
         add_jobs_from_dict(db, report['jobs'], snapshot, cluster)
         add_nodes_from_dict(db, report['nodes'], snapshot, cluster)
     db.commit()
@@ -189,11 +189,11 @@ def recv_from_daemon(stream, messages):
 
 
 # connect to the daemons over zmq
-for i, host in enumerate(settings.daemon_hosts):
+for i, daemon in enumerate(settings.daemons):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect('tcp://%s' % host)
+    socket.connect('tcp://%s:%d' % (daemon['host'], daemon['port']))
     stream = zmqstream.ZMQStream(socket)
     stream.on_recv_stream(recv_from_daemon)
-    stream.host = host
+    stream.daemon = daemon
     DAEMON_STREAMS.append(stream)

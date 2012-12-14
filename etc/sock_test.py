@@ -1,5 +1,13 @@
 import zmq
+import sys
+sys.path.append('/home/rmcgibbo/webstat')
+from webstat import settings
 ctx = zmq.Context()
-sock = ctx.socket(zmq.REQ)
-sock.connect('tcp://vsp-compute:76215')
-sock.send_json('hello')
+
+for daemon in settings.daemons:
+    sock = ctx.socket(zmq.REQ)
+    sock.connect('tcp://%s:%d' % (daemon['host'], daemon['port']))
+    sock.send('hello')
+
+    print 'Recieving on %s' % daemon
+    print sock.recv()[0:100]

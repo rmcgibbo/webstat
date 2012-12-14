@@ -5,7 +5,11 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 timezone = pytz.timezone('US/Pacific')
 
 # the hostname (or ip) and ip for the daemons, to conntect to over ZMQ
-daemon_hosts = ['vsp-compute:7621', 'vspm10:7620']
+daemons = [{'host': 'vsp-compute', 'port': 7621,
+            'name': 'vsp-compute', 'id': 1, 'default': True},
+           {'host': 'vspm10', 'port': 7620,
+            'name': 'certainty', 'id': 2, 'default': False},
+           ]
 
 # Rough time that computed queries stay in the memcache
 # before going stale

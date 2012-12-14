@@ -44,10 +44,10 @@ if __name__ == '__main__':
     # Add the handler
     default_logger.addHandler(mylogger)
 
-   # Remove the default stream handler
-    for handler in default_logger.handlers:
-        if isinstance(handler, logging.StreamHandler):
-            default_logger.removeHandler(handler)
+    # # Remove the default stream handler
+    # for handler in default_logger.handlers:
+    #    if isinstance(handler, logging.StreamHandler):
+    #        default_logger.removeHandler(handler)
 
     ioloop.install() # install zmq into the ioloop
     models.create_all()
