@@ -44,7 +44,7 @@ the whole operation because it requires using a new language an ecosystem.
 todo
 ----
 - more visualizations, data
-- more clusters (certainty, biox3)
+- more clusters (biox3)
 - move some logic that's in the client into this codebase. specifically, 
   the client is currently doing some data munging to get the data from
   the format the sqlite3 spits out into a format that google charts likes.
