@@ -13,8 +13,7 @@ def prepare_deploy():
 @roles('daemon')
 def run_daemon():
     "Start the daemon on the remote pbs servers"
-    code_dir = 'webstat'
-    with cd(code_dir):
+    with cd('webstat'):
         run('git pull')
         run('python scripts/cluster_daemon.py daemon')
 
