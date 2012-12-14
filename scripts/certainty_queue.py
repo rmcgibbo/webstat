@@ -25,7 +25,7 @@ def main():
         # Socket facing services
 
         backend = context.socket(zmq.XREQ)
-        ssh.tunnel_connection(backend, 'tcp://127.0.0.1:7621', 'certainty-b')
+        ssh.tunnel_connection(backend, 'tcp://127.0.0.1:7621', 'certainty-b', timeout=24*60*60)
 
         zmq.device(zmq.QUEUE, frontend, backend)
     except Exception, e:
@@ -38,9 +38,4 @@ def main():
         context.term()
 
 if __name__ == "__main__":
-    log = open('certainty_queue.log', 'a+')
-    lock = lockfile.FileLock(os.path.expanduser('~/.certainty_queue.pid'))
-    if lock.is_locked():
-        raise RuntimeError('Already Running')
-    with daemon.DaemonContext(pidfile=lock, stdout=log, stderr=log):
-        main()
+    main()

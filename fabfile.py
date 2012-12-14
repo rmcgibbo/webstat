@@ -29,8 +29,8 @@ def run_server():
 def run_certainty_queue():
     with cd('webstat'):
         run('git pull')
-        with settings(warn_only=True):
-            run('python scripts/certainty_queue.py')
+        run('supervisorctl stop webstat_certainty_queue')
+        run('supervisorctl start webstat_certainty_queue')
 
 def deploy():
     prepare_deploy()
