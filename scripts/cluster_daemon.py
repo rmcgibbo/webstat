@@ -240,7 +240,11 @@ if __name__ == "__main__":
         main()
 
     elif sys.argv[1] == 'daemon':
-        with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/webstatd.py')):
+        log = open('cluster_daemon.log', 'a+')
+        lock = lockfile.FileLock(os.path.expanduser('~/cluster_daemon.pid'))
+        if lock.is_locked():
+            raise ValueError('Already Running')
+        with daemon.DaemonContext(pidfile=lock, stdout=log, stderr=log):
             main()
 
     else:

@@ -6,7 +6,7 @@ connections on port 7620 which get forwarded to certainty-b
 on port 7621 over SSH
 """
 
-
+import os
 import zmq
 from zmq import ssh
 import daemon
@@ -34,5 +34,9 @@ def main():
         context.term()
 
 if __name__ == "__main__":
-    with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/certainty_queue.pid')):
+    log = open('certainty_queue.log', 'a+')
+    lock = lockfile.FileLock(os.path.expanduser('~/.certainty_queue.pid'))
+    if lock.is_locked():
+        raise RuntimeError('Already Running')
+    with daemon.DaemonContext(pidfile=lock, stdout=log, stderr=log):
         main()
