@@ -192,7 +192,7 @@ class Cluster:
         self.groups = {}
         for job in self.jobs:
             try: # Sometimes the group file isn't readable
-                group = os.popen('grep %s /etc/group' % user).readlines()[0].split(':')[0]
+                group = os.popen('grep %s /etc/group' % job.user).readlines()[0].split(':')[0]
             except:
                 group = None
             if job.user is not None:
@@ -240,7 +240,7 @@ if __name__ == "__main__":
         main()
 
     elif sys.argv[1] == 'daemon':
-        with daemon.DaemonContext(pidfule=lockfile.FileLock('/var/run/webstatd.py')):
+        with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/webstatd.py')):
             main()
 
     else:
