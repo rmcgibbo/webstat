@@ -31,7 +31,7 @@ routes = [
     (r'/cluster/(\d+)/freenodes', handlers.FreeNodes),
 ]
 
-if __name__ == '__main__':
+def main():
     tornado.options.parse_command_line()
     ioloop.install() # install zmq into the ioloop
     models.create_all()
@@ -46,3 +46,9 @@ if __name__ == '__main__':
         io_loop=tornado.ioloop.IOLoop.instance()).start()
 
     tornado.ioloop.IOLoop.instance().start()
+
+if __name__ == '__main__':
+    import daemon
+    import lockfile
+    with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/webstat.pid')):
+        main()

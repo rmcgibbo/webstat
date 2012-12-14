@@ -9,6 +9,8 @@ on port 7621 over SSH
 
 import zmq
 from zmq import ssh
+import daemon
+import lockfile
 
 def main():
 
@@ -32,4 +34,5 @@ def main():
         context.term()
 
 if __name__ == "__main__":
-    main()
+    with daemon.DaemonContext(pid=lockfile.FileLock('/var/run/certainty_queue.pid')):
+        main()

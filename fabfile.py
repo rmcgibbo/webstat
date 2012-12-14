@@ -15,22 +15,26 @@ def run_daemon():
     "Start the daemon on the remote pbs servers"
     with cd('webstat'):
         run('git pull')
+        run('pip install python-daemon')
         run('python scripts/cluster_daemon.py daemon')
 
 @roles('server')
 def run_server():
     with cd('webstat'):
         run('git pull')
-        run('nohup python webstat/app.py &')
+        run('pip install python-daemon')
+        run('python webstat/app.py')
 
 @roles('certainty-queue')
 def run_certainty_queue():
     with cd('webstat'):
         run('git pull')
-        run('nohup python scripts/certainty_queue.py')
+        run('python scripts/certainty_queue.py')
 
 def deploy():
     prepare_deploy()
-    run_daemon()
-    run_certainty_queue()
-    run_server()
+
+    #http://docs.fabfile.org/en/1.5/usage/execution.html#intelligently-executing-tasks-with-execute
+    execute(run_daemon)
+    execute(run_certainty_queue)
+    execute(run_server)

@@ -3,8 +3,8 @@
 import os, sys, socket
 import json
 import zmq
-from daemonize import Daemonize
-
+import daemon
+import lockfile
 
 class Job:
     def __init__(self):
@@ -235,11 +235,13 @@ if __name__ == "__main__":
         print 'report = make_report()'
         report = make_report()
         import IPython; IPython.embed()
+
     elif sys.argv[1] == 'run':
         main()
+
     elif sys.argv[1] == 'daemon':
-        daemon = Daemonize(app='cluster_daemon', pid = "/tmp/cluster_daemon.pid", action=main)
-        print 'Daemonizing'
-        daemon.start()
+        with daemon.DaemonContext(pidfule=lockfile.FileLock('/var/run/webstatd.py')):
+            main()
+
     else:
         raise RuntimeError()
