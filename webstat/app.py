@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
-import os.path
+import daemon
+import lockfile
+import os
 from zmq.eventloop import ioloop, zmqstream
 import tornado.web
 import tornado.options
@@ -9,6 +10,7 @@ import handlers
 import utils
 import models
 import settings
+import logging
 
 ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -31,8 +33,22 @@ routes = [
     (r'/cluster/(\d+)/freenodes', handlers.FreeNodes),
 ]
 
-def main():
+if __name__ == '__main__':
     tornado.options.parse_command_line()
+    mylogger = logging.FileHandler('webstat.log')
+    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    mylogger.setFormatter(formatter)
+
+    default_logger = logging.getLogger('')
+
+    # Add the handler
+    default_logger.addHandler(mylogger)
+
+   # Remove the default stream handler
+    for handler in default_logger.handlers:
+        if isinstance(handler, logging.StreamHandler):
+            default_logger.removeHandler(handler)
+
     ioloop.install() # install zmq into the ioloop
     models.create_all()
     
@@ -46,9 +62,3 @@ def main():
         io_loop=tornado.ioloop.IOLoop.instance()).start()
 
     tornado.ioloop.IOLoop.instance().start()
-
-if __name__ == '__main__':
-    import daemon
-    import lockfile
-    with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/webstat.pid')):
-        main()

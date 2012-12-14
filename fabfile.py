@@ -21,7 +21,8 @@ def run_daemon():
 def run_server():
     with cd('webstat'):
         run('git pull')
-        run('python webstat/app.py')
+        run('supervisorctl stop webstat')
+        run('supervisorctl start webstat')
 
 @roles('certainty-queue')
 def run_certainty_queue():
