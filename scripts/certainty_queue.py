@@ -34,5 +34,5 @@ def main():
         context.term()
 
 if __name__ == "__main__":
-    with daemon.DaemonContext(pid=lockfile.FileLock('/var/run/certainty_queue.pid')):
+    with daemon.DaemonContext(pidfile=lockfile.FileLock('/var/run/certainty_queue.pid')):
         main()

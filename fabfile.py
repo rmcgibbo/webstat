@@ -15,14 +15,12 @@ def run_daemon():
     "Start the daemon on the remote pbs servers"
     with cd('webstat'):
         run('git pull')
-        run('pip install python-daemon')
         run('python scripts/cluster_daemon.py daemon')
 
 @roles('server')
 def run_server():
     with cd('webstat'):
         run('git pull')
-        run('pip install python-daemon')
         run('python webstat/app.py')
 
 @roles('certainty-queue')
