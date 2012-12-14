@@ -21,13 +21,13 @@ def run_daemon():
 def run_server():
     with cd('webstat'):
         run('git pull')
-        run('nohup python webstat/app.py')
+        run('nohup python webstat/app.py &')
 
 @roles('certainty-queue')
 def run_certainty_queue():
     with cd('webstat'):
         run('git pull')
-        run('nohup python scripts/certainty-queue')
+        run('nohup python scripts/certainty_queue.py')
 
 def deploy():
     prepare_deploy()
