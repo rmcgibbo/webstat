@@ -241,7 +241,7 @@ if __name__ == "__main__":
 
     elif sys.argv[1] == 'daemon':
         log = open('cluster_daemon.log', 'a+')
-        lock = lockfile.FileLock(os.path.expanduser('~/cluster_daemon.pid'))
+        lock = lockfile.FileLock(os.path.expanduser('~/.cluster_daemon.pid'))
         if lock.is_locked():
             raise ValueError('Already Running')
         with daemon.DaemonContext(pidfile=lock, stdout=log, stderr=log):
