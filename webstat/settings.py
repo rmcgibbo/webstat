@@ -4,7 +4,13 @@ ROOT = os.path.abspath(os.path.dirname(__file__))
 
 timezone = pytz.timezone('US/Pacific')
 
-# the hostname (or ip) and ip for the daemons, to conntect to over ZMQ
+# the clusters to connect to
+# host and port give the route to connect to them for zmq
+# id gives the order that they will appear to the client
+# name is the name under which that cluster will be
+# saved in the db and displayed to the client
+# default should be true for one of the daemons and is the
+# cluster that gets displayed when users navigate to the root page
 daemons = [{'host': 'vsp-compute', 'port': 7621,
             'name': 'vsp-compute', 'id': 1, 'default': True},
            {'host': 'vspm10', 'port': 7620,

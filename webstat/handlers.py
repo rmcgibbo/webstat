@@ -32,7 +32,7 @@ class Clusters(RequestHandler):
         response = []
         for daemon in settings.daemons:
             response.append({'name': daemon['name'], 'id': daemon['id'], 
-                             'acive': daemon['default']})
+                             'active': daemon['default']})
 
         self.write({'clusters': response})
 
