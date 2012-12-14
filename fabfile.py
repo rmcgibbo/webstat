@@ -15,7 +15,8 @@ def run_daemon():
     "Start the daemon on the remote pbs servers"
     with cd('webstat'):
         run('git pull')
-        run('python scripts/cluster_daemon.py daemon')
+        with settings(warn_only=True):
+            run('python scripts/cluster_daemon.py daemon')
 
 @roles('server')
 def run_server():
@@ -28,7 +29,8 @@ def run_server():
 def run_certainty_queue():
     with cd('webstat'):
         run('git pull')
-        run('python scripts/certainty_queue.py')
+        with settings(warn_only=True):
+            run('python scripts/certainty_queue.py')
 
 def deploy():
     prepare_deploy()
