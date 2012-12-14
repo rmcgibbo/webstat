@@ -192,7 +192,7 @@ def recv_from_daemon(stream, messages):
 for i, host in enumerate(settings.daemon_hosts):
     context = zmq.Context()
     socket = context.socket(zmq.REQ)
-    socket.connect('tcp://%s:%d' % (host, settings.zeromq_port))
+    socket.connect('tcp://%s' % host)
     stream = zmqstream.ZMQStream(socket)
     stream.on_recv_stream(recv_from_daemon)
     stream.host = host

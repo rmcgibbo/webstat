@@ -210,7 +210,7 @@ def make_report():
 def main():
     ctx = zmq.Context()
     sock = ctx.socket(zmq.REP)
-    sock.bind('tcp://*:76215')
+    sock.bind('tcp://*:7621')
     auth_key = None
 
     while 1:
