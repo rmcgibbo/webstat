@@ -7,19 +7,23 @@ on port 7621 over SSH
 """
 
 import os
-import zmq
-from zmq import ssh
 import daemon
 import lockfile
 
 def main():
+    # put the imports in here, because ssh opens a file descriptor (/dev/urandom I think)
+    # which gets broken if you do it before daemonizing
+    import zmq
+    from zmq import ssh
 
     try:
         context = zmq.Context(1)
-        # Socket facing clients                                                                                                                                                                                                               
+        # Socket facing clients
+
         frontend = context.socket(zmq.XREP)
         frontend.bind("tcp://*:7620")
-        # Socket facing services                                                                                                                                                                                                              
+        # Socket facing services
+
         backend = context.socket(zmq.XREQ)
         ssh.tunnel_connection(backend, 'tcp://127.0.0.1:7621', 'certainty-b')
 
