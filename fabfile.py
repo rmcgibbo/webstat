@@ -1,4 +1,4 @@
-from fabric.api import env, local, cd, run, hosts
+from fabric.api import *
 
 
 env.roledefs = {'daemon': ['vsp-compute', 'certainty-b'],
@@ -30,6 +30,7 @@ def run_certainty_queue():
         run('nohup python scripts/certainty-queue')
 
 def deploy():
+    prepare_deploy()
     run_daemon()
     run_certainty_queue()
     run_server()
