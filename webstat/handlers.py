@@ -147,9 +147,11 @@ class AnnounceSocket(websocket.WebSocketHandler):
         method(message)
 
     def ping(self, message):
+        logging.info('Received Ping')
         self.write_message({'name': 'pong'})
 
     def refresh(self, message):
+        logging.info('Q: Polled Daemons?')
         status = poll_daemons()
         self.write_message({'name': 'response', 'payload': 'Poll? %s' % status})
         logging.info('Q: Polled Daemons? A: %s', status)
@@ -166,6 +168,8 @@ DAEMON_STREAMS = []
 def poll_daemons():
     """Poll the daemons over zeromq. Guard against doing this too frequently
     with the decorator"""
+    print 'poll the daemons'
+    logging.info('poling the daemons')
     for sock in DAEMON_STREAMS:
         sock.send(settings.zmq_auth_keys)
     return True
